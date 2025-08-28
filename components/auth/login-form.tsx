@@ -50,7 +50,7 @@ export function LoginForm() {
       // The onAuthStateChange listener in AuthProvider will handle the redirect
       router.refresh()
       
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)

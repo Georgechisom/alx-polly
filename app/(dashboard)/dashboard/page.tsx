@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { PollsList } from '@/components/polls/polls-list'
 import { CreatePollButton } from '@/components/polls/create-poll-button'
 import { DashboardStats } from '@/components/shared/dashboard-stats'
+import { UserProfile } from '@/components/auth/user-profile'
 
 export const metadata: Metadata = {
   title: 'Dashboard | ALX Polly',
@@ -18,7 +19,10 @@ export default function DashboardPage() {
             Manage your polls and view analytics
           </p>
         </div>
-        <CreatePollButton />
+        <div className="flex items-center space-x-4">
+          <CreatePollButton />
+          <UserProfile />
+        </div>
       </div>
 
       <div className="space-y-8">

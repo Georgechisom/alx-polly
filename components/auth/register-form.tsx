@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const registerSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -25,7 +26,9 @@ type RegisterFormData = z.infer<typeof registerSchema>
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -40,28 +43,27 @@ export function RegisterForm() {
   async function onSubmit(data: RegisterFormData) {
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
-      // TODO: Implement Supabase registration
-      console.log('Registration attempt:', data)
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+          },
+          emailRedirectTo: `${location.origin}/api/auth/callback`,
+        },
+      })
       
-      // Placeholder for actual registration logic
-      // const { error } = await supabase.auth.signUp({
-      //   email: data.email,
-      //   password: data.password,
-      //   options: {
-      //     data: {
-      //       full_name: data.fullName,
-      //     }
-      //   }
-      // })
+      if (error) {
+        setError(error.message)
+        return
+      }
       
-      // if (error) {
-      //   setError(error.message)
-      //   return
-      // }
-      
-      // router.push('/dashboard')
+      setSuccess('Registration successful! Please check your email to confirm your account.')
+      form.reset()
       
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
@@ -76,6 +78,11 @@ export function RegisterForm() {
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="default">
+            <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
         

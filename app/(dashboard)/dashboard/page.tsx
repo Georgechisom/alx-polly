@@ -11,33 +11,31 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 animate-slide-down gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              Manage your polls and view analytics
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <CreatePollButton />
-            <UserProfile />
-          </div>
+    <div className="min-h-screen py-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 animate-slide-down gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your polls and view analytics
+          </p>
         </div>
+        <div className="flex items-center space-x-4">
+          <CreatePollButton />
+          <UserProfile />
+        </div>
+      </div>
 
-        <div className="space-y-8">
-          <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <DashboardStats />
-          </div>
-          <div className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">
-              Your Polls
-            </h2>
-            <PollsList />
-          </div>
+      <div className="space-y-8">
+        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <DashboardStats />
+        </div>
+        <div className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
+          <h2 className="text-2xl font-semibold mb-4 text-foreground">
+            Your Polls
+          </h2>
+          <PollsList />
         </div>
       </div>
     </div>

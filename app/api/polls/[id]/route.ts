@@ -9,23 +9,52 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createRouteClient();
     const pollId = params.id;
 
-    // TODO: Implement poll fetching with options
-    const { data: poll, error: pollError } = await supabase
-      .from("polls")
-      .select(
-        `
-        *,
-        poll_options (*)
-      `
-      )
-      .eq("id", pollId)
-      .single();
+    // For now, return mock data to test the frontend
+    // TODO: Implement proper Supabase integration once auth is working
+    const mockPolls: Record<string, any> = {
+      "1": {
+        id: "1",
+        title: "What's your favorite programming language?",
+        description: "Help us understand the community preferences",
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 86400000).toISOString(),
+        expires_at: null,
+        is_public: true,
+        allow_multiple_votes: false,
+        creator_id: "mock-user-id",
+        options: [
+          { id: "opt-1", text: "JavaScript", votes: 45 },
+          { id: "opt-2", text: "Python", votes: 38 },
+          { id: "opt-3", text: "TypeScript", votes: 32 },
+          { id: "opt-4", text: "Go", votes: 15 },
+          { id: "opt-5", text: "Rust", votes: 12 },
+        ],
+      },
+      "2": {
+        id: "2",
+        title: "Best time for team meetings?",
+        description: "Let's find the optimal meeting time",
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        updated_at: new Date(Date.now() - 172800000).toISOString(),
+        expires_at: new Date(Date.now() + 604800000).toISOString(),
+        is_public: false,
+        allow_multiple_votes: true,
+        creator_id: "mock-user-id",
+        options: [
+          { id: "opt-1", text: "9:00 AM", votes: 12 },
+          { id: "opt-2", text: "10:00 AM", votes: 25 },
+          { id: "opt-3", text: "2:00 PM", votes: 18 },
+          { id: "opt-4", text: "3:00 PM", votes: 8 },
+        ],
+      },
+    };
 
-    if (pollError) {
-      return NextResponse.json({ error: pollError.message }, { status: 404 });
+    const poll = mockPolls[pollId];
+
+    if (!poll) {
+      return NextResponse.json({ error: "Poll not found" }, { status: 404 });
     }
 
     return NextResponse.json({ poll });

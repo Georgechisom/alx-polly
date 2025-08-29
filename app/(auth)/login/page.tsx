@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-scale-in">
-        <Card className="hover-lift transition-smooth">
+        <Card className="hover-lift transition-smooth bg-background/80 backdrop-blur-sm border-border/50">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl text-foreground animate-slide-down">
               Welcome back

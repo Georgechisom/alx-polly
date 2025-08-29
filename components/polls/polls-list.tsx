@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PollsSkeleton } from "./polls-skeleton";
 
 // TODO: Replace with actual poll type
 interface Poll {
@@ -38,7 +39,14 @@ export function PollsList() {
   useEffect(() => {
     const fetchPolls = async () => {
       try {
-        const response = await fetch("/api/polls");
+        // Add a small delay to show skeleton (remove in production)
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const response = await fetch("/api/polls", {
+          headers: {
+            "Cache-Control": "max-age=60, stale-while-revalidate=300",
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setPolls(data.polls || []);
@@ -56,21 +64,7 @@ export function PollsList() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-3 bg-muted rounded w-full"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <PollsSkeleton />;
   }
 
   if (polls.length === 0) {

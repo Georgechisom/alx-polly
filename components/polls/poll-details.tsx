@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle, Clock, Users } from "lucide-react";
+import { PollDetailSkeleton } from "./polls-skeleton";
 
 interface PollOption {
   id: string;
@@ -67,7 +68,13 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/polls/${pollId}`);
+      const response = await fetch(`/api/polls/${pollId}`, {
+        headers: {
+          "Cache-Control": silent
+            ? "no-cache"
+            : "max-age=30, stale-while-revalidate=60",
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setPoll(data.poll);
@@ -123,21 +130,7 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
   };
 
   if (isLoading) {
-    return (
-      <Card className="animate-pulse gradient-card">
-        <CardHeader>
-          <div className="h-8 bg-muted rounded w-3/4"></div>
-          <div className="h-4 bg-muted rounded w-1/2"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-12 bg-muted rounded"></div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <PollDetailSkeleton />;
   }
 
   if (!poll) {

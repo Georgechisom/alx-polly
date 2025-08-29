@@ -7,42 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { BarChart3, Users, Zap, QrCode } from "lucide-react";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { Users, Zap, QrCode } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 animate-slide-down">
-        <nav className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-primary transition-colors-smooth" />
-            <span className="text-2xl font-bold text-foreground">
-              ALX Polly
-            </span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              asChild
-              className="transition-colors-smooth hover-lift"
-            >
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button
-              asChild
-              className="hover-glow transition-smooth gradient-primary"
-            >
-              <Link href="/register">Get Started</Link>
-            </Button>
-          </div>
-        </nav>
-      </header>
-
       {/* Hero Section */}
-      <main className="container mx-auto px-4 py-16">
+      <main className="container mx-auto px-6 py-16">
         <div className="text-center mb-16 animate-fade-in">
           <h1 className="text-5xl font-bold text-foreground mb-6 animate-slide-up">
             Create Polls That Matter
@@ -59,11 +30,7 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up"
             style={{ animationDelay: "0.4s" }}
           >
-            <Button
-              size="lg"
-              asChild
-              className="hover-glow transition-smooth gradient-primary"
-            >
+            <Button size="lg" asChild className="hover-glow transition-smooth">
               <Link href="/register">Start Creating</Link>
             </Button>
             <Button
@@ -80,7 +47,7 @@ export default function Home() {
         {/* Features */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <Card
-            className="hover-lift transition-smooth animate-scale-in gradient-card"
+            className="hover-lift transition-smooth animate-scale-in"
             style={{ animationDelay: "0.6s" }}
           >
             <CardHeader>
@@ -96,7 +63,7 @@ export default function Home() {
           </Card>
 
           <Card
-            className="hover-lift transition-smooth animate-scale-in gradient-card"
+            className="hover-lift transition-smooth animate-scale-in"
             style={{ animationDelay: "0.8s" }}
           >
             <CardHeader>
@@ -110,7 +77,7 @@ export default function Home() {
           </Card>
 
           <Card
-            className="hover-lift transition-smooth animate-scale-in gradient-card"
+            className="hover-lift transition-smooth animate-scale-in"
             style={{ animationDelay: "1.0s" }}
           >
             <CardHeader>
@@ -130,7 +97,7 @@ export default function Home() {
           className="text-center animate-fade-in"
           style={{ animationDelay: "1.2s" }}
         >
-          <Card className="max-w-2xl mx-auto hover-lift transition-smooth gradient-card">
+          <Card className="max-w-2xl mx-auto hover-lift transition-smooth">
             <CardHeader>
               <CardTitle className="text-2xl text-foreground">
                 Ready to get started?
@@ -143,7 +110,7 @@ export default function Home() {
               <Button
                 size="lg"
                 asChild
-                className="hover-glow transition-smooth gradient-primary"
+                className="hover-glow transition-smooth"
               >
                 <Link href="/register">Create Your First Poll</Link>
               </Button>

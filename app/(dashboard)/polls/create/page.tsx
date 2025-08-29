@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function CreatePollPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
+    <div className="min-h-screen">
+      <div className="container mx-auto py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8 animate-slide-down">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -28,7 +28,7 @@ export default function CreatePollPage() {
           </div>
 
           <Card
-            className="hover-lift transition-smooth animate-scale-in"
+            className="hover-lift transition-smooth animate-scale-in gradient-card"
             style={{ animationDelay: "0.2s" }}
           >
             <CardHeader>

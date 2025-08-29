@@ -124,7 +124,7 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
 
   if (isLoading) {
     return (
-      <Card className="animate-pulse">
+      <Card className="animate-pulse gradient-card">
         <CardHeader>
           <div className="h-8 bg-muted rounded w-3/4"></div>
           <div className="h-4 bg-muted rounded w-1/2"></div>
@@ -156,7 +156,7 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="hover-lift transition-smooth animate-scale-in">
+      <Card className="hover-lift transition-smooth animate-scale-in gradient-card">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -282,7 +282,7 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
                 <Button
                   onClick={handleVote}
                   disabled={selectedOptions.length === 0 || isVoting}
-                  className="hover-glow transition-smooth"
+                  className="hover-glow transition-smooth gradient-primary"
                 >
                   {isVoting ? "Submitting..." : "Submit Vote"}
                 </Button>

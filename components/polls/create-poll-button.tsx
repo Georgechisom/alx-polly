@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function CreatePollButton() {
   return (
-    <Button asChild className="hover-glow transition-smooth">
+    <Button asChild className="hover-glow transition-smooth gradient-primary">
       <Link href="/polls/create">
         <Plus className="mr-2 h-4 w-4" />
         Create Poll

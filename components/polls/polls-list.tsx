@@ -75,7 +75,7 @@ export function PollsList() {
 
   if (polls.length === 0) {
     return (
-      <Card className="animate-fade-in hover-lift transition-smooth">
+      <Card className="animate-fade-in hover-lift transition-smooth gradient-card">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2 text-foreground">
@@ -84,7 +84,10 @@ export function PollsList() {
           <p className="text-muted-foreground text-center mb-4">
             Create your first poll to start collecting responses
           </p>
-          <Button asChild className="hover-glow transition-smooth">
+          <Button
+            asChild
+            className="hover-glow transition-smooth gradient-primary"
+          >
             <Link href="/polls/create">Create Your First Poll</Link>
           </Button>
         </CardContent>
@@ -97,7 +100,7 @@ export function PollsList() {
       {polls.map((poll, index) => (
         <Card
           key={poll.id}
-          className="hover-lift transition-smooth animate-scale-in"
+          className="hover-lift transition-smooth animate-scale-in gradient-card"
           style={{ animationDelay: `${index * 0.1}s` }}
         >
           <CardHeader className="pb-3">

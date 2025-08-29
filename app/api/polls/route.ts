@@ -1,99 +1,92 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from "next/server";
+import { createRouteClient } from "@/lib/supabase/server-client";
+import { z } from "zod";
 
 const createPollSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
   description: z.string().optional(),
-  options: z.array(z.string().min(1, 'Option cannot be empty')).min(2, 'At least 2 options required'),
+  options: z
+    .array(z.string().min(1, "Option cannot be empty"))
+    .min(2, "At least 2 options required"),
   allowMultipleVotes: z.boolean().default(false),
   expiresAt: z.string().datetime().optional(),
   isPublic: z.boolean().default(true),
-})
+});
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    const { data: { user } } = await supabase.auth.getUser()
+    // For now, return mock data to test the frontend
+    // TODO: Implement proper Supabase integration once auth is working
+    const mockPolls = [
+      {
+        id: "1",
+        title: "What's your favorite programming language?",
+        description: "Help us understand the community preferences",
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 86400000).toISOString(),
+        expires_at: null,
+        is_public: true,
+        allow_multiple_votes: false,
+        creator_id: "mock-user-id",
+      },
+      {
+        id: "2",
+        title: "Best time for team meetings?",
+        description: "Let's find the optimal meeting time",
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        updated_at: new Date(Date.now() - 172800000).toISOString(),
+        expires_at: new Date(Date.now() + 604800000).toISOString(),
+        is_public: false,
+        allow_multiple_votes: true,
+        creator_id: "mock-user-id",
+      },
+    ];
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const offset = (page - 1) * limit
-
-    // TODO: Implement poll fetching logic
-    const { data: polls, error } = await supabase
-      .from('polls')
-      .select('*')
-      .eq('creator_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ polls })
+    return NextResponse.json({ polls: mockPolls });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    const { data: { user } } = await supabase.auth.getUser()
+    // For now, return mock data to test the frontend
+    // TODO: Implement proper Supabase integration once auth is working
+    const body = await request.json();
+    const validatedData = createPollSchema.parse(body);
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Create mock poll response
+    const mockPoll = {
+      id: Date.now().toString(),
+      title: validatedData.title,
+      description: validatedData.description,
+      creator_id: "mock-user-id",
+      is_public: validatedData.isPublic,
+      allow_multiple_votes: validatedData.allowMultipleVotes,
+      expires_at: validatedData.expiresAt,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      options: validatedData.options.map((option, index) => ({
+        id: `option-${index + 1}`,
+        text: option,
+        order_index: index,
+        votes: 0,
+      })),
+    };
 
-    const body = await request.json()
-    const validatedData = createPollSchema.parse(body)
-
-    // TODO: Implement poll creation logic
-    const { data: poll, error: pollError } = await supabase
-      .from('polls')
-      .insert({
-        title: validatedData.title,
-        description: validatedData.description,
-        creator_id: user.id,
-        allow_multiple_votes: validatedData.allowMultipleVotes,
-        expires_at: validatedData.expiresAt,
-        is_public: validatedData.isPublic,
-      })
-      .select()
-      .single()
-
-    if (pollError) {
-      return NextResponse.json({ error: pollError.message }, { status: 500 })
-    }
-
-    // Create poll options
-    const optionsData = validatedData.options.map((option, index) => ({
-      poll_id: poll.id,
-      text: option,
-      order_index: index,
-    }))
-
-    const { error: optionsError } = await supabase
-      .from('poll_options')
-      .insert(optionsData)
-
-    if (optionsError) {
-      return NextResponse.json({ error: optionsError.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ poll }, { status: 201 })
+    return NextResponse.json({ poll: mockPoll }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

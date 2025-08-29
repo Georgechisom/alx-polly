@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useAuth } from '@/contexts/auth-context'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { useAuth } from "@/contexts/auth-context";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,31 +10,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
+} from "@/components/ui/dropdown-menu";
+import { createClient } from "@/lib/supabase/browser-client";
+import { useRouter } from "next/navigation";
 
 export function UserProfile() {
-  const { user } = useAuth()
-  const supabase = createClientComponentClient()
-  const router = useRouter()
+  const { user } = useAuth();
+  const supabase = createClient();
+  const router = useRouter();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.refresh()
-  }
+    await supabase.auth.signOut();
+    router.refresh();
+  };
 
   if (!user) {
-    return null
+    return null;
   }
 
   const getInitials = (name: string) => {
-    const names = name.split(' ')
+    const names = name.split(" ");
     if (names.length > 1) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase()
-  }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <DropdownMenu>
@@ -46,7 +46,7 @@ export function UserProfile() {
               alt={user.user_metadata?.full_name || user.email}
             />
             <AvatarFallback>
-              {getInitials(user.user_metadata?.full_name || user.email || '')}
+              {getInitials(user.user_metadata?.full_name || user.email || "")}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -63,10 +63,8 @@ export function UserProfile() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          Log out
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

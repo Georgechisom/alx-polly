@@ -69,11 +69,8 @@ export function PollDetails({ pollId, initialPoll }: PollDetailsProps) {
 
     try {
       const response = await fetch(`/api/polls/${pollId}`, {
-        headers: {
-          "Cache-Control": silent
-            ? "no-cache"
-            : "max-age=30, stale-while-revalidate=60",
-        },
+        cache: silent ? "no-cache" : "force-cache",
+        next: { revalidate: silent ? 0 : 30 }, // Real-time updates for silent refresh
       });
       if (response.ok) {
         const data = await response.json();

@@ -52,6 +52,23 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function getPollsData() {
+  // core logic returns plain JS objects (no Response)
+  const polls = [
+    /* ... */
+  ];
+  return polls;
+}
+
+export default async function handler(req: Request) {
+  try {
+    const polls = await getPollsData();
+    return new Response(JSON.stringify(polls), { status: 200 });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "..." }), { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteClient();

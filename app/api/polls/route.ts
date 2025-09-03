@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server-client";
 import { z } from "zod";
+import { getPollsData } from "./route";
+
+test("getPollsData returns mock polls", async () => {
+  const polls = await getPollsData();
+  expect(Array.isArray(polls)).toBe(true);
+  // further assertions...
+});
 
 const createPollSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),

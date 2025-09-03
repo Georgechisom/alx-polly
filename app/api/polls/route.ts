@@ -13,36 +13,38 @@ const createPollSchema = z.object({
   isPublic: z.boolean().default(true),
 });
 
-export async function GET(request: NextRequest) {
-  try {
-    // For now, return mock data to test the frontend
-    // TODO: Implement proper Supabase integration once auth is working
-    const mockPolls = [
-      {
-        id: "1",
-        title: "What's your favorite programming language?",
-        description: "Help us understand the community preferences",
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        updated_at: new Date(Date.now() - 86400000).toISOString(),
-        expires_at: null,
-        is_public: true,
-        allow_multiple_votes: false,
-        creator_id: "mock-user-id",
-      },
-      {
-        id: "2",
-        title: "Best time for team meetings?",
-        description: "Let's find the optimal meeting time",
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        updated_at: new Date(Date.now() - 172800000).toISOString(),
-        expires_at: new Date(Date.now() + 604800000).toISOString(),
-        is_public: false,
-        allow_multiple_votes: true,
-        creator_id: "mock-user-id",
-      },
-    ];
+async function getPollsData() {
+  const mockPolls = [
+    {
+      id: "1",
+      title: "What's your favorite programming language?",
+      description: "Help us understand the community preferences",
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 86400000).toISOString(),
+      expires_at: null,
+      is_public: true,
+      allow_multiple_votes: false,
+      creator_id: "mock-user-id",
+    },
+    {
+      id: "2",
+      title: "Best time for team meetings?",
+      description: "Let's find the optimal meeting time",
+      created_at: new Date(Date.now() - 172800000).toISOString(),
+      updated_at: new Date(Date.now() - 172800000).toISOString(),
+      expires_at: new Date(Date.now() + 604800000).toISOString(),
+      is_public: false,
+      allow_multiple_votes: true,
+      creator_id: "mock-user-id",
+    },
+  ];
+  return { polls: mockPolls };
+}
 
-    return NextResponse.json({ polls: mockPolls });
+export async function GET() {
+  try {
+    const data = await getPollsData();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API error:", error);
     return NextResponse.json(
@@ -52,93 +54,77 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function getPollsData() {
-  // core logic returns plain JS objects (no Response)
-  const polls = [
-    /* ... */
-  ];
-  return polls;
-}
+async function createPollData(request: NextRequest) {
+  const supabase = createRouteClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default async function handler(req: Request) {
-  try {
-    const polls = await getPollsData();
-    return new Response(JSON.stringify(polls), { status: 200 });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "..." }), { status: 500 });
+  if (!user) {
+    return { error: "Unauthorized", status: 401 };
   }
+
+  const body = await request.json();
+  const validatedData = createPollSchema.parse(body);
+
+  const { data: poll, error: pollError } = await supabase
+    .from("polls")
+    .insert({
+      title: validatedData.title,
+      description: validatedData.description,
+      creator_id: user.id,
+      allow_multiple_votes: validatedData.allowMultipleVotes,
+      expires_at: validatedData.expiresAt,
+      is_public: validatedData.isPublic,
+    })
+    .select()
+    .single();
+
+  if (pollError) {
+    console.error("Error creating poll:", pollError);
+    return { error: "Error creating poll", status: 500 };
+  }
+
+  const optionsToInsert = validatedData.options.map((optionText, index) => ({
+    text: optionText,
+    poll_id: poll.id,
+    order_index: index,
+  }));
+
+  const { error: optionsError } = await supabase
+    .from("poll_options")
+    .insert(optionsToInsert);
+
+  if (optionsError) {
+    console.error("Error creating poll options:", optionsError);
+    await supabase.from("polls").delete().eq("id", poll.id);
+    return { error: "Error creating poll options", status: 500 };
+  }
+
+  const { data: createdOptions, error: fetchOptionsError } = await supabase
+    .from("poll_options")
+    .select("id, text, order_index")
+    .eq("poll_id", poll.id);
+
+  if (fetchOptionsError) {
+    console.error("Error fetching created poll options:", fetchOptionsError);
+  }
+
+  return {
+    data: { ...poll, options: createdOptions || [] },
+    status: 201,
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data, error, status } = await createPollData(request);
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (error) {
+      return NextResponse.json({ error }, { status });
     }
 
-    const body = await request.json();
-    const validatedData = createPollSchema.parse(body);
-
-    // TODO: This should be a transaction. Using an RPC function in Supabase is the recommended way.
-    const { data: poll, error: pollError } = await supabase
-      .from("polls")
-      .insert({
-        title: validatedData.title,
-        description: validatedData.description,
-        creator_id: user.id,
-        allow_multiple_votes: validatedData.allowMultipleVotes,
-        expires_at: validatedData.expiresAt,
-        is_public: validatedData.isPublic,
-      })
-      .select()
-      .single();
-
-    if (pollError) {
-      console.error("Error creating poll:", pollError);
-      return NextResponse.json(
-        { error: "Error creating poll" },
-        { status: 500 }
-      );
-    }
-
-    const optionsToInsert = validatedData.options.map((optionText, index) => ({
-      text: optionText,
-      poll_id: poll.id,
-      order_index: index,
-    }));
-
-    const { error: optionsError } = await supabase
-      .from("poll_options")
-      .insert(optionsToInsert);
-
-    if (optionsError) {
-      console.error("Error creating poll options:", optionsError);
-      // Clean up the created poll if options insertion fails
-      await supabase.from("polls").delete().eq("id", poll.id);
-      return NextResponse.json(
-        { error: "Error creating poll options" },
-        { status: 500 }
-      );
-    }
-
-    // Fetch the newly created options to return them with the poll
-    const { data: createdOptions, error: fetchOptionsError } = await supabase
-      .from("poll_options")
-      .select("id, text, order_index")
-      .eq("poll_id", poll.id);
-
-    if (fetchOptionsError) {
-      // Log the error but proceed with returning the poll data, as the creation was successful
-      console.error("Error fetching created poll options:", fetchOptionsError);
-    }
-
-    const responseData = { ...poll, options: createdOptions || [] };
-
-    return NextResponse.json({ poll: responseData }, { status: 201 });
+    return NextResponse.json({ poll: data }, { status });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server-client";
 import { z } from "zod";
-import { getPollsData } from "./route";
-
-test("getPollsData returns mock polls", async () => {
-  const polls = await getPollsData();
-  expect(Array.isArray(polls)).toBe(true);
-  // further assertions...
-});
 
 const createPollSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -21,31 +14,22 @@ const createPollSchema = z.object({
 });
 
 async function getPollsData() {
-  const mockPolls = [
-    {
-      id: "1",
-      title: "What's your favorite programming language?",
-      description: "Help us understand the community preferences",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 86400000).toISOString(),
-      expires_at: null,
-      is_public: true,
-      allow_multiple_votes: false,
-      creator_id: "mock-user-id",
-    },
-    {
-      id: "2",
-      title: "Best time for team meetings?",
-      description: "Let's find the optimal meeting time",
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      updated_at: new Date(Date.now() - 172800000).toISOString(),
-      expires_at: new Date(Date.now() + 604800000).toISOString(),
-      is_public: false,
-      allow_multiple_votes: true,
-      creator_id: "mock-user-id",
-    },
-  ];
-  return { polls: mockPolls };
+  const supabase = await createRouteClient();
+  const { data: polls, error } = await supabase
+    .from("polls")
+    .select(
+      `
+      *,
+      poll_options (*)
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { polls: polls || [] };
 }
 
 export async function GET() {
@@ -62,7 +46,7 @@ export async function GET() {
 }
 
 async function createPollData(request: NextRequest) {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

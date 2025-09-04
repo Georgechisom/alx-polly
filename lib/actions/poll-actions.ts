@@ -32,7 +32,7 @@ export async function createPoll(
       return { error: validation.error.message };
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("polls")
       .insert({
@@ -46,13 +46,14 @@ export async function createPoll(
       return { error: error.message };
     }
 
-    const pollOptions = input.options.map((option) => ({
+    const pollOptions = input.options.map((option, index) => ({
       text: option.text,
       poll_id: data.id,
+      order_index: index,
     }));
 
     const { error: optionsError } = await supabase
-      .from("options")
+      .from("poll_options")
       .insert(pollOptions);
 
     if (optionsError) {
@@ -69,13 +70,13 @@ export async function getPoll(
   id: string
 ): Promise<{ data?: PollWithOptions; error?: string }> {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("polls")
       .select(
         `
         *,
-        options (*)
+        poll_options (*)
       `
       )
       .eq("id", id)
@@ -85,7 +86,12 @@ export async function getPoll(
       return { error: error.message };
     }
 
-    return { data };
+    return {
+      data: {
+        ...data,
+        options: data.poll_options || []
+      }
+    };
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -100,7 +106,7 @@ export async function deletePoll(
 
   try {
     await validateAndAuthenticate();
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { error } = await supabase.from("polls").delete().eq("id", pollId);
 
     if (error) {

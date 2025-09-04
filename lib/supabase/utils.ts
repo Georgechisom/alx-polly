@@ -1,13 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
+import { createServerSupabaseClient } from "@/lib/supabase/server-client";
 
-export function createSupabaseServerClient() {
-  const cookieStore = cookies();
-  return createClient(cookieStore);
+export async function createSupabaseServerClient() {
+  return await createServerSupabaseClient();
 }
 
 export async function getCurrentUser() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -1,20 +1,50 @@
 // jest.setup.js
-require("@testing-library/jest-dom");
 
-// Mock window.matchMedia
-Object.defineProperty(window, "matchMedia", {
-  writable: true,
-  value: jest.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
+// Add TextEncoder/TextDecoder polyfills FIRST before any imports
+const { TextEncoder, TextDecoder } = require("util");
+
+// @ts-expect-error - Adding polyfills to global
+global.TextEncoder = TextEncoder;
+// @ts-expect-error - Adding polyfills to global
+global.TextDecoder = TextDecoder;
+
+// Add undici polyfills for Web API support in Node environment
+const { fetch, Request, Response, Headers, FormData } = require("undici");
+
+// @ts-expect-error - Adding polyfills to global
+global.fetch = fetch;
+// @ts-expect-error - Adding polyfills to global
+global.Request = Request;
+// @ts-expect-error - Adding polyfills to global
+global.Response = Response;
+// @ts-expect-error - Adding polyfills to global
+global.Headers = Headers;
+// @ts-expect-error - Adding polyfills to global
+global.FormData = FormData;
+
+// Also polyfill ReadableStream for tests
+const { ReadableStream } = require("stream/web");
+// @ts-expect-error - Adding polyfills to global
+global.ReadableStream = ReadableStream;
+
+import "@testing-library/jest-dom";
+
+// Mock window.matchMedia (only if window exists - for jsdom environment)
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: jest.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
 
 // Mock IntersectionObserver
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -29,32 +59,6 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
-
-// Mock fetch if not available
-if (!global.fetch) {
-  global.fetch = jest.fn();
-}
-
-// Polyfill Request for Node environment
-if (typeof global.Request === "undefined") {
-  global.Request = class Request {
-    constructor(input, init = {}) {
-      this.url = typeof input === "string" ? input : input.url;
-      this.method = init.method || "GET";
-      this.headers = new Headers(init.headers);
-      this.body = init.body;
-    }
-    async json() {
-      if (this.body) {
-        return JSON.parse(this.body);
-      }
-      return {};
-    }
-    async text() {
-      return this.body || "";
-    }
-  };
-}
 
 // Global test setup
 beforeEach(() => {

@@ -23,7 +23,10 @@ async function getPollsData() {
       poll_options (*)
     `
     )
-    .order("created_at", { ascending: false });
+    .eq("is_public", true)
+    .order("created_at", { ascending: false })
+    .order("order_index", { foreignTable: "poll_options", ascending: true });
+  // .range(0, 49) // optional: paginate
 
   if (error) {
     throw new Error(error.message);

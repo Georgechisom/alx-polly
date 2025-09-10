@@ -77,7 +77,7 @@ export async function getPoll(
         `
         *,
         poll_options (*)
-      `
+        `
       )
       .eq("id", id)
       .single();
@@ -86,11 +86,33 @@ export async function getPoll(
       return { error: error.message };
     }
 
+    // Map and transform poll options
+    const mappedOptions = (data.poll_options || []).map((option) => ({
+      id: option.id,
+      pollId: option.poll_id,
+      text: option.text,
+      position: option.order_index,
+      votes: option.votes || 0,
+      createdAt: option.created_at,
+      updatedAt: option.updated_at,
+    }));
+
+    // Sort options by position (order_index) first, then by id
+    const sortedOptions = mappedOptions.sort((a, b) => {
+      if (a.position !== b.position) {
+        return (a.position ?? Infinity) - (b.position ?? Infinity);
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    // Create new data object without poll_options
+    const { poll_options, ...pollData } = data;
+
     return {
       data: {
-        ...data,
-        options: data.poll_options || []
-      }
+        ...pollData,
+        options: sortedOptions,
+      },
     };
   } catch (e) {
     return { error: (e as Error).message };

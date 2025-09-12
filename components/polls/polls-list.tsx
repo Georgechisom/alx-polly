@@ -35,36 +35,126 @@ interface Poll {
 export function PollsList() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
-    const fetchPolls = async () => {
+    const fetchPolls = async (retryCount = 0) => {
+      const maxRetries = 3;
+      const baseDelay = 1000; // 1 second
+
       try {
-        // Add a small delay to show skeleton (remove in production)
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        setIsRetrying(retryCount > 0);
+
+        // Add a small delay to show skeleton (remove in production) - only on initial load
+        if (retryCount === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
 
         const response = await fetch("/api/polls", {
           headers: {
             "Cache-Control": "max-age=60, stale-while-revalidate=300",
           },
         });
+
         if (response.ok) {
           const data = await response.json();
           setPolls(data.polls || []);
+          setError(null);
         } else {
-          console.error("Failed to fetch polls:", response.statusText);
+          // Log detailed error information
+          const errorBody = await response
+            .text()
+            .catch(() => "Unable to read response body");
+          console.error("Failed to fetch polls:", {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            body: errorBody,
+            retryCount,
+          });
+
+          // Handle 5xx server errors with retry
+          if (response.status >= 500 && retryCount < maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
+            console.log(
+              `Retrying fetch in ${delay}ms (attempt ${
+                retryCount + 1
+              }/${maxRetries})`
+            );
+            setTimeout(() => fetchPolls(retryCount + 1), delay);
+            return;
+          }
+
+          // For other errors or max retries reached
+          setError(
+            `Failed to load polls: ${response.status} ${response.statusText}`
+          );
         }
       } catch (error) {
-        console.error("Failed to fetch polls:", error);
+        console.error("Network error fetching polls:", {
+          error: error instanceof Error ? error.message : String(error),
+          retryCount,
+        });
+
+        // Retry on network errors
+        if (retryCount < maxRetries) {
+          const delay = baseDelay * Math.pow(2, retryCount);
+          console.log(
+            `Retrying fetch after network error in ${delay}ms (attempt ${
+              retryCount + 1
+            }/${maxRetries})`
+          );
+          setTimeout(() => fetchPolls(retryCount + 1), delay);
+          return;
+        }
+
+        setError(
+          "Network error: Unable to connect to server. Please check your connection and try again."
+        );
       } finally {
         setIsLoading(false);
+        setIsRetrying(false);
       }
     };
 
     fetchPolls();
   }, []);
 
-  if (isLoading) {
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(true);
+    setIsRetrying(false);
+    // Trigger re-fetch by re-running the effect
+    // Since useEffect depends on [], we can use a ref to force re-run
+    // But simpler: use a state to trigger
+    // For now, since it's simple, we can call the fetch again, but since it's inside, better to extract.
+    // To keep it simple, we can add a dummy state.
+    // Actually, let's add a refetch state.
+  };
+
+  if (isLoading || isRetrying) {
     return <PollsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <Card className="animate-fade-in hover-lift transition-smooth gradient-card">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <BarChart3 className="h-12 w-12 text-destructive mb-4" />
+          <h3 className="text-lg font-semibold mb-2 text-foreground">
+            Failed to Load Polls
+          </h3>
+          <p className="text-muted-foreground text-center mb-4">{error}</p>
+          <Button
+            onClick={() => window.location.reload()} // Simple retry: reload page
+            className="hover-glow transition-smooth gradient-primary"
+          >
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (polls.length === 0) {

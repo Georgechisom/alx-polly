@@ -13,7 +13,7 @@ const createPollSchema = z.object({
   isPublic: z.boolean().default(true),
 });
 
-async function getPollsData() {
+async function getPollsData(skip: number = 0, limit: number = 10) {
   const supabase = await createRouteClient();
   const { data: polls, error } = await supabase
     .from("polls")
@@ -23,7 +23,10 @@ async function getPollsData() {
       poll_options (*)
     `
     )
-    .order("created_at", { ascending: false });
+    .eq("is_public", true)
+    .order("created_at", { ascending: false })
+    .order("order_index", { foreignTable: "poll_options", ascending: true })
+    .range(skip, skip + limit - 1);
 
   if (error) {
     throw new Error(error.message);
@@ -32,9 +35,13 @@ async function getPollsData() {
   return { polls: polls || [] };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const data = await getPollsData();
+    const { searchParams } = new URL(request.url);
+    const skip = parseInt(searchParams.get("skip") || "0", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+
+    const data = await getPollsData(skip, limit);
     return NextResponse.json(data);
   } catch (error) {
     console.error("API error:", error);

@@ -1,15 +1,13 @@
-export type Option = {
+export interface PollOption {
   id: string;
+  pollId: string;
   text: string;
-  poll_id: string;
-};
+  position?: number;
+  votes: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export type Poll = {
-  id: string;
-  title: string;
-  creator_id: string;
-};
-
-export type PollWithOptions = Poll & {
-  options: Option[];
-};
+export interface PollWithOptions extends Poll {
+  options: PollOption[];
+}

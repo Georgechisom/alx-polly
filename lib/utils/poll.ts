@@ -1,125 +1,204 @@
-import { Poll, PollOption, Vote } from '@/types'
+import { Poll, PollOption } from "@/types";
 
+// Enum for poll status
+export const PollStatus = {
+  ACTIVE: "active",
+  EXPIRED: "expired",
+} as const;
+
+export type PollStatusType = (typeof PollStatus)[keyof typeof PollStatus];
+
+/**
+ * Calculates the total number of votes for a poll.
+ * @param poll - The poll object.
+ * @returns The total number of votes.
+ */
+export function getPollTotalVotes(poll: Poll): number {
+  return (
+    poll.options?.reduce((sum, option) => sum + (option.vote_count || 0), 0) ||
+    0
+  );
+}
+
+/**
+ * Calculates the results of a poll, including vote counts and percentages.
+ * @param poll - The poll object.
+ * @returns An array of poll options with calculated results.
+ */
 export function calculatePollResults(poll: Poll) {
-  if (!poll.options) return []
+  if (!poll.options) return [];
 
-  const totalVotes = poll.options.reduce((sum, option) => sum + (option.vote_count || 0), 0)
+  const totalVotes = getPollTotalVotes(poll);
 
   return poll.options.map((option) => {
-    const votes = option.vote_count || 0
-    const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
+    const votes = option.vote_count || 0;
+    const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
 
     return {
       ...option,
       votes,
       percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
-    }
-  })
+    };
+  });
 }
 
+/**
+ * Checks if a poll has expired.
+ * @param poll - The poll object.
+ * @returns True if the poll has expired, false otherwise.
+ */
 export function isPollExpired(poll: Poll): boolean {
-  if (!poll.expires_at) return false
-  return new Date(poll.expires_at) < new Date()
+  if (!poll.expires_at) return false;
+  return new Date(poll.expires_at) < new Date();
 }
 
+/**
+ * Checks if a poll is currently active.
+ * @param poll - The poll object.
+ * @returns True if the poll is active, false otherwise.
+ */
 export function isPollActive(poll: Poll): boolean {
-  return !isPollExpired(poll)
+  return !isPollExpired(poll);
 }
 
-export function getPollStatus(poll: Poll): 'active' | 'expired' {
-  return isPollExpired(poll) ? 'expired' : 'active'
+/**
+ * Gets the status of a poll ('active' or 'expired').
+ * @param poll - The poll object.
+ * @returns The poll status.
+ */
+export function getPollStatus(poll: Poll): PollStatusType {
+  return isPollExpired(poll) ? PollStatus.EXPIRED : PollStatus.ACTIVE;
 }
 
+/**
+ * Determines if a user can vote on a poll.
+ * @param poll - The poll object.
+ * @param userId - The ID of the user.
+ * @returns True if the user can vote, false otherwise.
+ */
 export function canUserVote(poll: Poll, userId?: string): boolean {
-  // Check if poll is expired
-  if (isPollExpired(poll)) return false
-
-  // Check if poll is public or user has access
-  if (!poll.is_public && !userId) return false
-
-  // TODO: Check if user has already voted (if multiple votes not allowed)
-  // This would require checking the votes data
-  
-  return true
+  if (isPollExpired(poll)) return false;
+  if (!poll.is_public && !userId) return false;
+  // TODO: Check if the user has already voted if multiple votes are not allowed.
+  return true;
 }
 
-export function formatPollUrl(pollId: string, type: 'vote' | 'view' | 'results' = 'vote'): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  
-  switch (type) {
-    case 'vote':
-      return `${baseUrl}/vote/${pollId}`
-    case 'view':
-      return `${baseUrl}/polls/${pollId}`
-    case 'results':
-      return `${baseUrl}/polls/${pollId}/results`
-    default:
-      return `${baseUrl}/vote/${pollId}`
+/**
+ * Formats the URL for a poll.
+ * @param pollId - The ID of the poll.
+ * @param type - The type of URL to generate ('vote', 'view', or 'results').
+ * @returns The formatted poll URL.
+ */
+export function formatPollUrl(
+  pollId: string,
+  type: "vote" | "view" | "results" = "vote"
+): string {
+  export function formatPollUrl(
+    pollId: string,
+    type: "vote" | "view" | "results" = "vote"
+  ): string {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const path =
+      {
+        vote: `/vote/${pollId}`,
+        view: `/polls/${pollId}`,
+        results: `/polls/${pollId}/results`,
+      }[type] || `/vote/${pollId}`; // fallback to vote URL
+    return `${baseUrl}${path}`;
   }
 }
 
+/**
+ * Generates a shareable text for a poll.
+ * @param poll - The poll object.
+ * @returns The shareable text.
+ */
 export function generatePollShareText(poll: Poll): string {
-  return `Vote on: ${poll.title} - ${formatPollUrl(poll.id, 'vote')}`
+  return `Vote on: ${poll.title} - ${formatPollUrl(poll.id, "vote")}`;
 }
 
+/**
+ * Validates and cleans poll options.
+ * @param options - An array of poll option strings.
+ * @returns A unique, trimmed, and filtered array of poll options.
+ */
 export function validatePollOptions(options: string[]): string[] {
-  // Remove empty options and trim whitespace
-  const cleanOptions = options
-    .map(option => option.trim())
-    .filter(option => option.length > 0)
-
-  // Remove duplicates (case-insensitive)
-  const uniqueOptions = cleanOptions.filter((option, index, arr) => 
-    arr.findIndex(o => o.toLowerCase() === option.toLowerCase()) === index
-  )
-
-  return uniqueOptions
+  const cleanedOptions = options.map((option) => option.trim()).filter(Boolean);
+  const uniqueOptions = Array.from(
+    new Set(cleanedOptions.map((opt) => opt.toLowerCase()))
+  ).map(
+    (lowerCaseOpt) =>
+      cleanedOptions.find((opt) => opt.toLowerCase() === lowerCaseOpt)!
+  );
+  return uniqueOptions;
 }
 
+/**
+ * Sorts poll options by their order index.
+ * @param options - An array of poll options.
+ * @returns A sorted array of poll options.
+ */
 export function sortPollOptions(options: PollOption[]): PollOption[] {
-  return [...options].sort((a, b) => a.order_index - b.order_index)
+  return [...options].sort((a, b) => a.order_index - b.order_index);
 }
 
+/**
+ * Gathers analytics for a poll.
+ * @param poll - The poll object.
+ * @returns An object containing poll analytics.
+ */
 export function getPollAnalytics(poll: Poll) {
-  const options = poll.options || []
-  const totalVotes = options.reduce((sum, option) => sum + (option.vote_count || 0), 0)
-  
-  // Find most popular option
-  const mostPopular = options.reduce((prev, current) => 
-    (current.vote_count || 0) > (prev.vote_count || 0) ? current : prev
-  , options[0])
+  const options = poll.options || [];
+  const totalVotes = getPollTotalVotes(poll);
 
-  // Calculate engagement metrics
-  const averageVotesPerOption = totalVotes / options.length
-  const engagementRate = totalVotes > 0 ? (totalVotes / (totalVotes + 100)) * 100 : 0 // Placeholder calculation
+  const mostPopular =
+    options.length > 0
+      ? options.reduce((prev, current) =>
+          (current.vote_count || 0) > (prev.vote_count || 0) ? current : prev
+        )
+      : null;
+
+  const averageVotesPerOption =
+    options.length > 0 ? totalVotes / options.length : 0;
 
   return {
     totalVotes,
     totalOptions: options.length,
-    mostPopular: mostPopular ? {
-      text: mostPopular.text,
-      votes: mostPopular.vote_count || 0,
-      percentage: totalVotes > 0 ? ((mostPopular.vote_count || 0) / totalVotes) * 100 : 0
-    } : null,
+    mostPopular: mostPopular
+      ? {
+          text: mostPopular.text,
+          votes: mostPopular.vote_count || 0,
+          percentage:
+            totalVotes > 0
+              ? ((mostPopular.vote_count || 0) / totalVotes) * 100
+              : 0,
+        }
+      : null,
     averageVotesPerOption: Math.round(averageVotesPerOption * 100) / 100,
-    engagementRate: Math.round(engagementRate * 100) / 100,
-  }
+  };
 }
 
+/**
+ * Gets the time remaining until a poll expires.
+ * @param poll - The poll object.
+ * @returns A human-readable string of the time remaining or 'Expired'.
+ */
 export function getTimeUntilExpiry(poll: Poll): string | null {
-  if (!poll.expires_at) return null
+  if (!poll.expires_at) return null;
 
-  const now = new Date()
-  const expiry = new Date(poll.expires_at)
-  const diff = expiry.getTime() - now.getTime()
+  const diff = new Date(poll.expires_at).getTime() - new Date().getTime();
+  if (diff <= 0) return "Expired";
 
-  if (diff <= 0) return 'Expired'
+  const units = [
+    { value: 24 * 60 * 60 * 1000, label: "day" },
+    { value: 60 * 60 * 1000, label: "hour" },
+    { value: 60 * 1000, label: "minute" },
+  ];
 
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  for (const unit of units) {
+    const value = Math.floor(diff / unit.value);
+    if (value > 0) return `${value} ${unit.label}${value > 1 ? "s" : ""}`;
+  }
 
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''}`
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}`
-  return `${minutes} minute${minutes > 1 ? 's' : ''}`
+  return "Less than a minute";
 }

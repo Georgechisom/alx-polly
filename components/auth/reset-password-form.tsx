@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,51 +16,66 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { createClient } from "@/lib/supabase/browser-client";
+import { resetPasswordSchema } from "@/lib/validations/auth";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
+type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
-type LoginFormData = z.infer<typeof loginSchema>;
-
-export function LoginForm() {
+export function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const searchParams = useSearchParams();
 
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<ResetPasswordInput>({
+    resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  async function onSubmit(data: LoginFormData) {
+  async function onSubmit(data: ResetPasswordInput) {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: data.password,
+          token: searchParams.get("token"),
+        }),
       });
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
+      const result = await response.json();
 
-      // The onAuthStateChange listener in AuthProvider will handle the redirect
-      router.refresh();
+      if (!response.ok) {
+        setError(result.error || "Failed to reset password");
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <Alert variant="default">
+        <AlertDescription>
+          Password reset successfully! Redirecting to login page...
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
@@ -74,12 +89,16 @@ export function LoginForm() {
 
         <FormField
           control={form.control}
-          name="email"
+          name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>New Password</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} />
+                <Input
+                  type="password"
+                  placeholder="Enter new password"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,14 +107,14 @@ export function LoginForm() {
 
         <FormField
           control={form.control}
-          name="password"
+          name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Confirm New Password</FormLabel>
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="Confirm new password"
                   {...field}
                 />
               </FormControl>
@@ -109,13 +128,8 @@ export function LoginForm() {
           className="w-full hover-glow transition-smooth"
           disabled={isLoading}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "Resetting password..." : "Reset password"}
         </Button>
-        <div className="mt-2 text-sm text-center">
-          <a href="/forgot-password" className="hover:underline">
-            Forgot Password?
-          </a>
-        </div>
       </form>
     </Form>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,46 +15,46 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { createClient } from "@/lib/supabase/browser-client";
+import { forgotPasswordSchema } from "@/lib/validations/auth";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
+type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
-type LoginFormData = z.infer<typeof loginSchema>;
-
-export function LoginForm() {
+export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const supabase = createClient();
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  async function onSubmit(data: LoginFormData) {
+  async function onSubmit(data: ForgotPasswordInput) {
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: data.email }),
       });
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
+      const result = await response.json();
 
-      // The onAuthStateChange listener in AuthProvider will handle the redirect
-      router.refresh();
+      if (!response.ok) {
+        setError(result.error || "Failed to send reset email");
+      } else {
+        setSuccess(
+          "If an account with that email exists, a password reset link has been sent."
+        );
+        form.reset();
+      }
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
@@ -69,6 +68,11 @@ export function LoginForm() {
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="default">
+            <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
@@ -86,36 +90,13 @@ export function LoginForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Enter your password"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <Button
           type="submit"
           className="w-full hover-glow transition-smooth"
           disabled={isLoading}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "Sending reset link..." : "Send reset link"}
         </Button>
-        <div className="mt-2 text-sm text-center">
-          <a href="/forgot-password" className="hover:underline">
-            Forgot Password?
-          </a>
-        </div>
       </form>
     </Form>
   );

@@ -66,7 +66,7 @@ export function PollsList() {
           const errorBody = await response
             .text()
             .catch(() => "Unable to read response body");
-          console.error("Failed to fetch polls:", {
+          console.log("Failed to fetch polls:", {
             status: response.status,
             statusText: response.statusText,
             url: response.url,
